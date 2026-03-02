@@ -152,8 +152,16 @@ function initTestimonialSlider() {
 function initPortfolioFilter() {
     const filterButtons = document.querySelectorAll('.filter-btn');
     const portfolioItems = document.querySelectorAll('[data-category]');
+    const gallerySection = document.querySelector('.portfolio-gallery');
     
     if (filterButtons.length === 0) return;
+    
+    // Ensure items are visible by default (fixes mobile blank state when JavaScript styles persist)
+    portfolioItems.forEach(item => {
+        item.style.display = 'block';
+        item.style.opacity = '1';
+        item.style.transform = 'scale(1)';
+    });
     
     filterButtons.forEach(button => {
         button.addEventListener('click', function() {
@@ -186,6 +194,9 @@ function initPortfolioFilter() {
                     }
                 }
             });
+            if (gallerySection) {
+                gallerySection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
         });
     });
 }
@@ -193,8 +204,8 @@ function initPortfolioFilter() {
 function initScrollReveal() {
     // Enhanced scroll animations using Intersection Observer for better performance
     const scrollObserverOptions = {
-        threshold: 0.15,
-        rootMargin: '0px 0px -100px 0px'
+        threshold: 0.1,
+        rootMargin: '0px 0px -50px 0px'
     };
 
     const scrollObserver = new IntersectionObserver((entries) => {
@@ -211,15 +222,28 @@ function initScrollReveal() {
     function isInViewport(element) {
         const rect = element.getBoundingClientRect();
         return (
-            rect.top < window.innerHeight &&
+            rect.top < window.innerHeight * 1.2 &&
             rect.bottom >= 0
         );
     }
 
-    // Reveal animations for various elements
-    const revealElements = document.querySelectorAll('.service-card, .portfolio-item, .testimonial-card, .choose-item, .workflow-step');
+    // Reveal animations for various elements (excluding portfolio-item-large)
+    const revealElements = document.querySelectorAll('.service-card, .portfolio-item, .testimonial-card, .choose-item, .workflow-step, .filter-buttons');
     revealElements.forEach((element, index) => {
+        // Check viewport first to avoid flicker
+        const isVisible = isInViewport(element);
+        
+        // If element is already visible, skip animation entirely
+        if (isVisible) {
+            element.classList.add('active');
+            // Don't add scroll-reveal class - keep element visible without animation
+            scrollObserver.observe(element);
+            return;
+        }
+        
+        // For elements not yet visible, add scroll-reveal animation
         element.classList.add('scroll-reveal');
+        
         // Add stagger delay to grid items
         if (element.classList.contains('service-card') || 
             element.classList.contains('portfolio-item') || 
@@ -228,17 +252,62 @@ function initScrollReveal() {
             element.classList.add(delayClass);
         }
         
-        // Immediately activate elements already in viewport
-        if (isInViewport(element)) {
-            element.classList.add('active');
+        scrollObserver.observe(element);
+    });
+
+    // Service detail items - use slide animations like about-story
+    const serviceDetailElements = document.querySelectorAll('.service-detail-item');
+    serviceDetailElements.forEach(element => {
+        // Skip animation for items with no-animation class
+        if (element.classList.contains('no-animation')) {
+            // Ensure it's visible immediately
+            const content = element.querySelector('.service-detail-content');
+            const image = element.querySelector('.service-detail-image');
+            if (content) {
+                content.style.opacity = '1';
+                content.style.transform = 'none';
+            }
+            if (image) {
+                image.style.opacity = '1';
+                image.style.transform = 'none';
+            }
+            return;
         }
         
-        scrollObserver.observe(element);
+        const content = element.querySelector('.service-detail-content');
+        const image = element.querySelector('.service-detail-image');
+        
+        // Check if this is a reverse layout
+        const isReverse = element.classList.contains('reverse');
+        
+        if (content) {
+            // Content slides from left (or right if reversed)
+            content.classList.add(isReverse ? 'scroll-slide-right' : 'scroll-slide-left');
+            if (isInViewport(content)) {
+                content.classList.add('active');
+            }
+            scrollObserver.observe(content);
+        }
+        
+        if (image) {
+            // Image slides from right (or left if reversed)
+            image.classList.add(isReverse ? 'scroll-slide-left' : 'scroll-slide-right');
+            if (isInViewport(image)) {
+                image.classList.add('active');
+            }
+            scrollObserver.observe(image);
+        }
     });
 
     // Slide animations for split layouts
     const slideLeftElements = document.querySelectorAll('.split-image, .about-image');
     slideLeftElements.forEach(element => {
+        // Skip animation on mobile
+        if (window.innerWidth <= 768) {
+            element.style.opacity = '1';
+            element.style.transform = 'none';
+            return;
+        }
         element.classList.add('scroll-slide-left');
         if (isInViewport(element)) {
             element.classList.add('active');
@@ -248,6 +317,12 @@ function initScrollReveal() {
 
     const slideRightElements = document.querySelectorAll('.split-content');
     slideRightElements.forEach(element => {
+        // Skip animation on mobile
+        if (window.innerWidth <= 768) {
+            element.style.opacity = '1';
+            element.style.transform = 'none';
+            return;
+        }
         element.classList.add('scroll-slide-right');
         if (isInViewport(element)) {
             element.classList.add('active');
