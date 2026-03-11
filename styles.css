@@ -2616,18 +2616,80 @@ html {
 }
 
 .project-card-detailed {
-    display: grid;
-    grid-template-columns: 1fr 1.5fr;
-    gap: 40px;
     background-color: var(--bg-primary);
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
     transition: all var(--transition-normal);
+    padding: 40px;
 }
 
 .project-card-detailed:hover {
     box-shadow: var(--shadow-lg);
+}
+
+.project-header {
+    position: relative;
+    margin-bottom: 40px;
+}
+
+.project-header h3 {
+    font-size: 36px;
+    font-weight: 400;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.project-type {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--accent-primary);
+    margin-bottom: 20px;
+}
+
+.project-description {
+    color: var(--text-secondary);
+    line-height: 1.8;
+    max-width: 900px;
+}
+
+.project-gallery {
+    margin-top: 40px;
+}
+
+.gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.gallery-item {
+    position: relative;
+    overflow: hidden;
+    border-radius: 8px;
+    aspect-ratio: 1;
+    background-color: var(--bg-tertiary);
+    transition: all var(--transition-normal);
+}
+
+.gallery-item-large {
+    grid-column: span 2;
+    grid-row: span 2;
+}
+
+.gallery-item img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-slow);
+}
+
+.gallery-item:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.gallery-item:hover img {
+    transform: scale(1.05);
 }
 
 .project-image-large {
@@ -3174,7 +3236,17 @@ html {
     }
     
     .project-card-detailed {
-        grid-template-columns: 1fr;
+        padding: 30px;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 12px;
+    }
+    
+    .gallery-item-large {
+        grid-column: span 2;
+        grid-row: span 2;
     }
 }
 
@@ -3534,6 +3606,24 @@ html {
     .stat-label {
         font-size: 13px;
     }
+    
+    .project-card-detailed {
+        padding: 20px;
+    }
+    
+    .project-header h3 {
+        font-size: 28px;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+    }
+    
+    .gallery-item-large {
+        grid-column: span 2;
+        grid-row: span 1;
+    }
 }
 
 /* Extra small devices */
@@ -3608,6 +3698,24 @@ html {
     
     .stat-number {
         font-size: 32px;
+    }
+    
+    .project-header h3 {
+        font-size: 24px;
+    }
+    
+    .project-description {
+        font-size: 15px;
+    }
+    
+    .gallery-grid {
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .gallery-item-large {
+        grid-column: span 1;
+        grid-row: span 1;
     }
 }
 
