@@ -9,6 +9,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initContactForm();
     initHeroCarousel();
     initWorkflowAnimation();
+    initProjectLightbox();
 });
 
 function initThemeToggle() {
@@ -351,7 +352,7 @@ function initScrollReveal() {
     });
 
     // Backward compatibility with old reveal class
-    const oldRevealElements = document.querySelectorAll('.project-card, .feature-item, .team-member, .process-step, .value-card, .pricing-card, .faq-item');
+    const oldRevealElements = document.querySelectorAll('.project-card, .project-showcase, .feature-item, .team-member, .process-step, .value-card, .pricing-card, .faq-item');
     oldRevealElements.forEach(element => {
         element.classList.add('reveal');
         scrollObserver.observe(element);
@@ -565,29 +566,151 @@ function initParallaxEffect() {
     });
 }
 
-// Add smooth entrance animation to sections
-function initSectionAnimations() {
-    const sections = document.querySelectorAll('.section');
-    
-    sections.forEach(section => {
-        section.style.opacity = '0';
-        section.style.transform = 'translateY(20px)';
-        section.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-    });
-    
-    const sectionObserver = new IntersectionObserver((entries) => {
-        entries.forEach(entry => {
-            if (entry.isIntersecting) {
-                entry.target.style.opacity = '1';
-                entry.target.style.transform = 'translateY(0)';
-            }
+// Sections below the hero animate with CSS on first paint.
+// Keeping this from hiding whole sections avoids the blank gap under the hero.
+function initSectionAnimations() {}
+
+function initProjectLightbox() {
+    const lightbox = document.getElementById('projectLightbox');
+    if (!lightbox) return;
+
+    const imageEl = lightbox.querySelector('.project-lightbox-image');
+    const captionEl = lightbox.querySelector('.project-lightbox-caption');
+    const counterEl = lightbox.querySelector('.project-lightbox-counter');
+    const prevBtn = lightbox.querySelector('.project-lightbox-prev');
+    const nextBtn = lightbox.querySelector('.project-lightbox-next');
+    const closeTriggers = lightbox.querySelectorAll('[data-lightbox-close]');
+    const galleries = document.querySelectorAll('.project-showcase .gallery-grid');
+
+    if (!imageEl || !galleries.length) return;
+
+    let items = [];
+    let currentIndex = 0;
+    let lastFocused = null;
+    let touchStartX = 0;
+
+    galleries.forEach((gallery) => {
+        const galleryItems = Array.from(gallery.querySelectorAll('.gallery-item'));
+
+        galleryItems.forEach((item, index) => {
+            const caption = item.querySelector('.gallery-caption');
+            const label = caption ? caption.textContent.trim() : 'project image';
+            item.setAttribute('role', 'button');
+            item.setAttribute('tabindex', '0');
+            item.setAttribute('aria-label', `Open ${label}`);
+
+            const openFromItem = () => openLightbox(galleryItems, index);
+
+            item.addEventListener('click', openFromItem);
+            item.addEventListener('keydown', (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault();
+                    openFromItem();
+                }
+            });
         });
-    }, {
-        threshold: 0.1,
-        rootMargin: '0px'
     });
-    
-    sections.forEach(section => sectionObserver.observe(section));
+
+    function openLightbox(galleryItems, index) {
+        items = galleryItems.map((item) => {
+            const img = item.querySelector('img');
+            const caption = item.querySelector('.gallery-caption');
+            return {
+                src: img ? img.currentSrc || img.src : '',
+                alt: img ? img.alt : '',
+                caption: caption ? caption.textContent.trim() : ''
+            };
+        }).filter((entry) => entry.src);
+
+        if (!items.length) return;
+
+        currentIndex = Math.max(0, Math.min(index, items.length - 1));
+        lastFocused = document.activeElement;
+        lightbox.hidden = false;
+        lightbox.setAttribute('aria-hidden', 'false');
+        requestAnimationFrame(() => {
+            lightbox.classList.add('is-open');
+        });
+        document.body.classList.add('lightbox-open');
+        renderSlide();
+        const closeBtn = lightbox.querySelector('.project-lightbox-close');
+        if (closeBtn) closeBtn.focus();
+    }
+
+    function closeLightbox() {
+        lightbox.classList.remove('is-open');
+        lightbox.setAttribute('aria-hidden', 'true');
+        document.body.classList.remove('lightbox-open');
+
+        window.setTimeout(() => {
+            if (!lightbox.classList.contains('is-open')) {
+                lightbox.hidden = true;
+                imageEl.removeAttribute('src');
+                imageEl.classList.remove('is-loaded');
+            }
+        }, 280);
+
+        if (lastFocused && typeof lastFocused.focus === 'function') {
+            lastFocused.focus();
+        }
+    }
+
+    function renderSlide() {
+        const item = items[currentIndex];
+        if (!item) return;
+
+        imageEl.classList.remove('is-loaded');
+        imageEl.onload = () => {
+            imageEl.classList.add('is-loaded');
+        };
+        imageEl.src = item.src;
+        imageEl.alt = item.alt || item.caption || 'Project image';
+        captionEl.textContent = item.caption || item.alt || '';
+        counterEl.textContent = `${currentIndex + 1} / ${items.length}`;
+
+        if (imageEl.complete) {
+            imageEl.classList.add('is-loaded');
+        }
+    }
+
+    function showNext(step = 1) {
+        if (!items.length) return;
+        currentIndex = (currentIndex + step + items.length) % items.length;
+        renderSlide();
+    }
+
+    prevBtn.addEventListener('click', () => showNext(-1));
+    nextBtn.addEventListener('click', () => showNext(1));
+    closeTriggers.forEach((trigger) => {
+        trigger.addEventListener('click', closeLightbox);
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (!lightbox.classList.contains('is-open')) return;
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            closeLightbox();
+        } else if (event.key === 'ArrowLeft') {
+            event.preventDefault();
+            showNext(-1);
+        } else if (event.key === 'ArrowRight') {
+            event.preventDefault();
+            showNext(1);
+        }
+    });
+
+    lightbox.addEventListener('touchstart', (event) => {
+        if (!lightbox.classList.contains('is-open') || !event.changedTouches.length) return;
+        touchStartX = event.changedTouches[0].clientX;
+    }, { passive: true });
+
+    lightbox.addEventListener('touchend', (event) => {
+        if (!lightbox.classList.contains('is-open') || !event.changedTouches.length) return;
+        const deltaX = event.changedTouches[0].clientX - touchStartX;
+        if (Math.abs(deltaX) < 50) return;
+        showNext(deltaX < 0 ? 1 : -1);
+    }, { passive: true });
 }
 
 // Initialize parallax and section animations
